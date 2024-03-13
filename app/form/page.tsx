@@ -11,25 +11,69 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  Select,
+} from "@/components/ui/select";
 
-const formSchema = z.object({
-  emailAddress: z.string().email().min(2).max(50),
-});
+const formSchema = z
+  .object({
+    emailAddress: z.string().email().min(2).max(50),
+    password: z.string().min(3),
+    passwordConfirm: z.string(),
+    accountType: z.enum(["personal", "company"]),
+    companyName: z.string(),
+  })
+  .refine(
+    (data) => {
+      return data.password === data.passwordConfirm;
+    },
+    {
+      message: "Password do not match",
+      path: ["passwordConfirm"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.accountType === "company") {
+        return !!data.companyName;
+      }
+      return true;
+    },
+    {
+      message: "Company name is required!",
+      path: ["CompanyName"],
+    }
+  );
 
 export default function FormHome() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       emailAddress: "",
+      password: "",
+      passwordConfirm: "",
+      companyName: "",
     },
   });
 
-  const handleSubmit = () => {};
+  const accountType = form.watch("accountType");
+
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log({ values });
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center">
+    <main className="flex min-h-screen flex-col items-center pt-24">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="max-w-md w-full flex flex-col gap-4"
+        >
           <FormField
             control={form.control}
             name="emailAddress"
@@ -49,6 +93,86 @@ export default function FormHome() {
               );
             }}
           />
+          <FormField
+            control={form.control}
+            name="accountType"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Account type</FormLabel>
+                  <Select onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an account type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="personal">Personal</SelectItem>
+                      <SelectItem value="company">Company</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+          {accountType === "company" && (
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Company Name </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Company name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          )}
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Password" type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+          <FormField
+            control={form.control}
+            name="passwordConfirm"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Confirm Password"
+                      type="password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+          <Button type="submit" className="w-full">
+            Submit
+          </Button>
         </form>
       </Form>
     </main>
